@@ -85,6 +85,11 @@ const main = async () => {
   } else {
     throw new Error("Session not found. Set COOKIES_JSON env var or create cookies.json");
   }
+  const sessionCookie = credentials.cookies.find((c) => c.name === "sessionid");
+  if (!sessionCookie) throw new Error("No 'sessionid' cookie found in the provided cookies");
+  // Short fingerprint so you can compare the secret with a local cookies.json without leaking it
+  const fingerprint = require("crypto").createHash("sha256").update(String(sessionCookie.value)).digest("hex").slice(0, 8);
+  console.log(blue(`[+] ${credentials.cookies.length} cookie(s), sessionid fingerprint: ${fingerprint}`));
 
 
 
