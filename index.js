@@ -90,6 +90,20 @@ const main = async () => {
   // Short fingerprint so you can compare the secret with a local cookies.json without leaking it
   const fingerprint = require("crypto").createHash("sha256").update(String(sessionCookie.value)).digest("hex").slice(0, 8);
   console.log(blue(`[+] ${credentials.cookies.length} cookie(s), sessionid fingerprint: ${fingerprint}`));
+  // Pin the session's data center. Without these, a non-local IP (e.g. a US GitHub runner)
+  // is routed to another TikTok data center that reports "session expired".
+  if (CONFIG.idc) {
+    const routing = {
+      "tt-target-idc": CONFIG.idc,
+      "store-idc": CONFIG.idc,
+      ...(CONFIG.countryCode && { "store-country-code": CONFIG.countryCode, "store-country-code-src": "uid" }),
+    };
+    for (const [name, value] of Object.entries(routing)) {
+      if (!credentials.cookies.some((c) => c.name === name))
+        credentials.cookies.push({ name, value, domain: ".tiktok.com", path: "/" });
+    }
+    if (isDebug) console.log(yellow(`[+] Routing cookies: idc=${CONFIG.idc} country=${CONFIG.countryCode || "-"}`));
+  }
 
 
 
