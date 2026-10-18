@@ -1,3 +1,7 @@
 node_modules
 cookies.json
 .env
+profile/
+logs/
+debug.png
+config.local.json

@@ -1,16 +1,16 @@
 {
-  "message": "API",
+  "message": "🔥",
   "useQuotesAPi": false,
+  "targets": [],
   "totalUsers": 10,
-  "actionDelayMs": 300,
-  "typeDelayMs": 0,
+  "actionDelayMs": 4000,
+  "typeDelayMs": 60,
   "afterSendDelayMs": 500,
   "afterClickDelayMs": 300,
   "pageLoadDelayMs": 5000,
-  "finishDelayMs": 3000,
-  "headless": false,
+  "finishDelayMs": 1000,
+  "headless": true,
   "bannerFont": "DOS Rebel",
   "targetUrl": "https://www.tiktok.com/messages?lang=en",
-  "idc": "alisg",
-  "countryCode": "vn"
+  "userDataDir": "profile"
 }

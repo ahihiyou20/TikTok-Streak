@@ -29,6 +29,29 @@
 | `index.js` | Puppeteer bot: launch, inject cookies, send messages |
 | `package.json` | npm manifest: Puppeteer, figlet, kleur dependencies |
 | `Dockerfile` | Self-hosted container image |
+| `run.ps1` | Windows: run once, log to `logs\`, show a notification |
+| `install-task.ps1` | Windows: register the daily scheduled task |
+
+## Run locally on Windows (recommended)
+
+> [!WARNING]
+> Do not run the bot from GitHub Actions or any other foreign/datacenter IP. TikTok treats a
+> session suddenly used from another country as stolen: messages are dropped and the account
+> is logged out everywhere with a security warning. Run it on your own PC and network.
+
+1. `npm install` (if Chrome was not downloaded: `npx puppeteer browsers install chrome`)
+2. `npm run login`: a Chrome window opens on the bot's own profile (`profile/`). Log in to
+   TikTok (QR code from the app is easiest), then close the window. No cookie export needed.
+3. Create `config.local.json` (gitignored, overrides `config.json`) with `targets` = exact
+   display names to message, e.g. `{ "targets": ["friend 1", "friend 2"] }`. Without `targets`,
+   the first `totalUsers` conversations are messaged. `message` is set in `config.json`.
+4. `npm run dry-run`: types the message in every chat but sends nothing.
+5. `powershell -ExecutionPolicy Bypass -File install-task.ps1` registers the "TikTok Streak"
+   task, daily at 06:00 (`-At 07:30` for another time, `-DryRun` to schedule a dry run).
+
+Each run appends to `logs\YYYY-MM-DD.log` and shows a Windows notification. A message only
+counts as sent when it appears in the chat, and again after reloading the page. If the log says
+"Not logged in", run `npm run login` again. To stop: `Unregister-ScheduledTask -TaskName "TikTok Streak"`.
 
 ## Docker
 

@@ -1,9 +1,9 @@
 name: TikTok Streak
 
+# WARNING: GitHub-hosted runners use foreign datacenter IPs. Using a TikTok session from
+# them got the account flagged and logged out everywhere. The schedule was removed on purpose;
+# run the bot on your own PC instead (see "Run locally on Windows" in the README).
 on:
-  schedule:
-    - cron: "0 15 * * *"
-    - cron: "0 17 * * *"
   workflow_dispatch:
     inputs:
       dry_run:

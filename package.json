@@ -4,7 +4,9 @@
   "description": "Automatically send TikTok streak messages via Puppeteer with configurable delays and chat limits.",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "login": "node index.js --login",
+    "dry-run": "node index.js --debug --dry-run"
   },
   "repository": {
     "type": "git",
