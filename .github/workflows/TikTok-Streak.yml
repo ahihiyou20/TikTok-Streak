@@ -22,7 +22,15 @@ jobs:
       - name: Run TikTok Streak
         env:
           COOKIES_JSON: ${{ secrets.COOKIES_JSON }}
-        run: node index.js
+        run: node index.js --debug
+
+      - name: Upload debug screenshot
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-screenshot
+          path: debug.png
+          if-no-files-found: ignore
 
       - name: Discord Notification
         if: always()
