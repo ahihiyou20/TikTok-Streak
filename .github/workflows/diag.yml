@@ -11,3 +11,7 @@ jobs:
       - run: node diag.js
         env:
           COOKIES_JSON: ${{ secrets.COOKIES_JSON }}
+      - run: node diag.js
+        env:
+          COOKIES_JSON: ${{ secrets.COOKIES_JSON }}
+          EXTRA_COOKIES: "tt-target-idc=alisg; store-idc=alisg; store-country-code=vn; store-country-code-src=uid"

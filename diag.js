@@ -3,7 +3,8 @@ const fs = require("fs");
 (async () => {
   const raw = process.env.COOKIES_JSON || fs.readFileSync("cookies.json", "utf8");
   const list = [].concat(JSON.parse(raw));
-  const cookie = list.map((c) => `${c.name}=${c.value}`).join("; ");
+  let cookie = list.map((c) => `${c.name}=${c.value}`).join("; ");
+  if (process.env.EXTRA_COOKIES) cookie += "; " + process.env.EXTRA_COOKIES;
   const geo = await fetch("https://ipinfo.io/json").then((r) => r.json()).catch(() => ({}));
   console.log("runner country:", geo.country, "| org:", geo.org);
   const ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36";
@@ -14,4 +15,8 @@ const fs = require("fs");
   console.log("server set-cookie names:", set.map((s) => s.split("=")[0]).join(","));
   const idc = set.find((s) => s.startsWith("tt-target-idc="));
   console.log("tt-target-idc:", idc ? idc.split(";")[0].split("=")[1] : "(none)");
+  for (const n of ["store-idc", "store-country-code", "store-country-code-src"]) {
+    const c = set.find((s) => s.startsWith(n + "="));
+    console.log(`  ${n}=${c ? c.split(";")[0].split("=")[1] : "(none)"}`);
+  }
 })();
