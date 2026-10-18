@@ -23,7 +23,7 @@ const loadConfig = () => {
     }
   }
   if (!fs.existsSync(CONFIG_FILE))
-    throw new Error("config.json tidak ditemukan");
+    throw new Error("config.json not found");
   try {
     return JSON.parse(fs.readFileSync(CONFIG_FILE, "utf8"));
   } catch {
@@ -187,6 +187,8 @@ const main = async () => {
   const targets = Array.isArray(CONFIG.targets) && CONFIG.targets.length ? CONFIG.targets : null;
   const total = targets ? targets.length : CONFIG.totalUsers;
   const sent = [];
+  const report = []; // per-account results for run.ps1 (Discord embed)
+  let fatal = null;
   let success = 0,
     failed = 0,
     verified = 0;
@@ -201,12 +203,13 @@ const main = async () => {
       d.dismiss().catch(() => {});
     });
     if (cookies) await page.setCookie(...cookies);
-    if (isDebug) console.log(yellow("[+] Membuka halaman TikTok messages..."));
+    if (isDebug) console.log(yellow("[+] Opening TikTok messages..."));
     let frame = await openMessages(page);
 
 
 
     for (let i = 0; i < total; i++) {
+      let label = targets ? targets[i] : `#${i + 1}`;
       try {
         // Sending moves a conversation to the top, so index i still points at the next unsent one.
         const item = targets
@@ -214,10 +217,11 @@ const main = async () => {
           : await frame.waitForSelector(`div[data-index="${i}"] ${CONVERSATION}`, { timeout: 3000 });
         if (!item) throw new Error(`Conversation "${targets[i]}" not found in the recent conversations`);
         const username = (await nicknameOf(item)) || `user${i}`;
-        console.log(yellow(`\n[${i + 1}/${total}] Mengirim pesan ke: ${username}`));
+        label = username;
+        console.log(yellow(`\n[${i + 1}/${total}] Sending to: ${username}`));
         await item.click();
         await sleep(1500);
-        if (isDebug) console.log(yellow("  [~] Mencari editor..."));
+        if (isDebug) console.log(yellow("  [~] Looking for the editor..."));
         const editor = await frame.waitForSelector(EDITOR, { timeout: 5000 });
         await editor.click();
         await sleep(CONFIG.afterClickDelayMs);
@@ -225,7 +229,7 @@ const main = async () => {
         let message = CONFIG.message;
         if (CONFIG.useQuotesAPi) {
           const quote = await fetchQuote();
-          if (!quote) throw new Error("Gagal fetch quote");
+          if (!quote) throw new Error("Failed to fetch quote");
           message = quote;
           if (isDebug) console.log(cyan(`  [~] Quote: ${quote}`));
         }
@@ -241,6 +245,7 @@ const main = async () => {
           await page.keyboard.press("Backspace");
           if (typed !== message.trim()) throw new Error(`Typed text mismatch: "${typed}"`);
           console.log(green(`  [✓] Dry run: message typed, not sent`));
+          report.push({ name: username, status: "dry" });
           success++;
           continue;
         }
@@ -248,7 +253,7 @@ const main = async () => {
           const items = document.querySelectorAll(sel);
           return items[items.length - 1] || null;
         }, CHAT_ITEM);
-        if (isDebug) console.log(blue("  [~] Mengirim dengan Enter..."));
+        if (isDebug) console.log(blue("  [~] Sending with Enter..."));
         await page.keyboard.press("Enter");
         await sleep(1500);
         if (await editorText()) {
@@ -261,16 +266,18 @@ const main = async () => {
           if (await editorText()) throw new Error("Message is still in the editor: Enter did not send it");
           throw new Error("Message did not appear in the chat after sending");
         }
-        console.log(green(`  [✓] Terkirim (shown in chat)`));
+        console.log(green(`  [✓] Sent (shown in chat)`));
         sent.push({ username, message });
+        report.push({ name: username, status: "sent" });
         success++;
       } catch (e) {
         console.log(red(`  [✗] Error: ${e.message}`));
+        report.push({ name: label, status: "failed", detail: e.message });
         failed++;
       }
 
       if (i < total - 1) {
-        if (isDebug) console.log(yellow(`  [~] Tunggu ${CONFIG.actionDelayMs} ms...`));
+        if (isDebug) console.log(yellow(`  [~] Waiting ${CONFIG.actionDelayMs} ms...`));
         await sleep(CONFIG.actionDelayMs);
       }
     }
@@ -291,13 +298,15 @@ const main = async () => {
           ok = (await lastChatText(frame)).includes(message.trim());
         }
         if (ok) verified++;
+        const entry = report.find((r) => r.name === username && r.status === "sent");
+        if (entry) Object.assign(entry, ok ? { status: "verified" } : { status: "failed", detail: "Sent, but not in the chat after reload" });
         console.log(ok ? green(`  [✓] Verified: ${username}`) : red(`  [✗] Not found after reload: ${username}`));
       }
     }
 
 
 
-    console.log(green(`\n[+] SELESAI!`));
+    console.log(green(`\n[+] Done!`));
     console.log(blue(`[+] Success: ${success}`));
     console.log(red(`[+] Failed: ${failed}`));
     if (!isDryRun) console.log(blue(`[+] Verified after reload: ${verified}/${sent.length}`));
@@ -306,6 +315,7 @@ const main = async () => {
     if (failed > 0 || verified < sent.length) process.exitCode = 1;
   } catch (e) {
     console.error(red(`[!] Fatal error: ${e.message}`));
+    fatal = e.message;
     if (page) {
       await page.screenshot({ path: path.join(__dirname, "debug.png") }).catch(() => {});
       console.error(red("[!] Screenshot saved to debug.png"));
@@ -314,6 +324,7 @@ const main = async () => {
   } finally {
     if (browser) await browser.close();
     // One machine-readable line for run.ps1's notification
+    console.log(`REPORT ${JSON.stringify({ dryRun: isDryRun, message: CONFIG.useQuotesAPi ? "(random quote)" : CONFIG.message, total, success, failed, verified, fatal, results: report })}`);
     console.log(`RESULT sent=${success} failed=${failed} verified=${verified} dryRun=${isDryRun} exit=${process.exitCode || 0}`);
   }
 };
