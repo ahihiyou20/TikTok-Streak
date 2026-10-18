@@ -1,0 +1,13 @@
+name: Diag
+on: workflow_dispatch
+jobs:
+  diag:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node diag.js
+        env:
+          COOKIES_JSON: ${{ secrets.COOKIES_JSON }}
