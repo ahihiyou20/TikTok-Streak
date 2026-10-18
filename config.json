@@ -1,6 +1,6 @@
 {
   "message": "API",
-  "useQuotesAPi": true,
+  "useQuotesAPi": false,
   "totalUsers": 14,
   "actionDelayMs": 300,
   "typeDelayMs": 0,
