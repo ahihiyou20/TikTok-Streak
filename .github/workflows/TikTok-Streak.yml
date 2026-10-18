@@ -5,6 +5,11 @@ on:
     - cron: "0 15 * * *"
     - cron: "0 17 * * *"
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Type messages but do not send them"
+        type: boolean
+        default: false
 
 jobs:
   streak:
@@ -22,7 +27,7 @@ jobs:
       - name: Run TikTok Streak
         env:
           COOKIES_JSON: ${{ secrets.COOKIES_JSON }}
-        run: node index.js --debug
+        run: node index.js --debug ${{ inputs.dry_run && '--dry-run' || '' }}
 
       - name: Upload debug screenshot
         if: failure()
